@@ -64,12 +64,23 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .horror #girl{filter:grayscale(.7) brightness(.7) drop-shadow(0 0 8px #b32c54)}
 .glitch{animation:glitch .18s steps(2) 6}
 @keyframes glitch{0%{transform:translate(0);filter:hue-rotate(0)}25%{transform:translate(3px,-1px);filter:hue-rotate(100deg) contrast(1.7)}50%{transform:translate(-3px,1px);filter:invert(.12)}75%{transform:translate(1px,2px);filter:hue-rotate(-90deg)}}
+
+/* character motion, tactile feedback and late-game signal corruption */
+#girl.walking{animation:walk .24s ease-in-out infinite alternate}
+#girl.walking svg{transform:rotate(-2deg)}
+#mole{transition:filter .8s,transform .8s,right .8s}
+@keyframes walk{from{translate:0 0;rotate:-1deg}to{translate:0 -4px;rotate:1deg}}
+#soundToggle{margin-left:5px}
+#top button:active,#controls button:active{transform:translateY(2px);filter:brightness(1.25)}
+.horror #roomLabel{color:#ffb2c2;text-shadow:0 0 10px #b21d48}
+.horror #dialog{border-color:#c63c65;box-shadow:0 0 0 4px #100d1388,0 0 25px #a21f4d66}
+.horror #speaker{color:#ff789b}
 @media(max-height:620px){#girl{height:110px;width:52px}#mole{height:84px;width:62px}#dialog{bottom:72px;min-height:90px}#words{font-size:13px}#dpad button,#actions button{height:39px}}
 </style></head>
 <body><main id="app">
 <section id="title"><div class="titlebox"><div class="kicker">ОБУЧАЮЩАЯ ПРОГРАММА · ЗАПИСЬ 01</div><div class="logo">IAWOY</div><div class="sub">«Я всегда присмотрю за тобой»</div><button class="menuBtn primary" id="start">▶ НАЧАТЬ НОВУЮ ИГРУ</button><button class="menuBtn" id="continue">ПРОДОЛЖИТЬ</button><button class="menuBtn" id="how">УПРАВЛЕНИЕ / НАСТРОЙКИ</button><div class="kicker" style="margin-top:14px">DEMO BUILD 0.8 · ANALOG HORROR</div></div></section>
 <section id="game">
-<header id="top"><span>IAWOY / ДОМАШНЯЯ ЗАПИСЬ</span><span id="tapes">КАССЕТЫ 0 / 3</span><button id="menu">МЕНЮ</button></header>
+<header id="top"><span>IAWOY / ДОМАШНЯЯ ЗАПИСЬ</span><span id="tapes">КАССЕТЫ 0 / 3</span><span><button id="soundToggle">ЗВУК: ВЫКЛ</button> <button id="menu">МЕНЮ</button></span></header>
 <div id="scene"><div id="sceneArt"><div class="wallpaper"></div><div class="window"></div><div class="bed"></div><div class="table"></div><div class="door"></div><div class="floor"></div></div>
 <div id="roomLabel">СПАЛЬНЯ · 21:14</div>
 <div id="shadowFace"><svg viewBox="0 0 300 200"><path d="M25 170 Q20 15 150 8 Q280 15 275 170 Q220 195 150 193 Q70 195 25 170" fill="#09070c"/><ellipse cx="93" cy="93" rx="19" ry="28" fill="#d6b6c5"/><ellipse cx="205" cy="93" rx="19" ry="28" fill="#d6b6c5"/><path d="M60 145 Q150 220 240 145" fill="none" stroke="#d6b6c5" stroke-width="13"/><path d="M85 145 L95 170 M120 158 L125 181 M160 158 L160 182 M195 150 L190 176" stroke="#09070c" stroke-width="7"/></svg></div>
@@ -86,30 +97,64 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const rooms=[
 {name:'СПАЛЬНЯ',time:'21:14',task:'Найди кассету возле старого шкафа.',item:'КАССЕТА 01',x:78,desc:'На наклейке написано: «Урок 1. Будь хорошей девочкой». Под почерком виден чей-то отпечаток пальца.',lines:[['ДЕВОЧКА','Я уже смотрела этот урок… кажется.'],['КРОТ','Привет, дружок! Сегодня мы научимся правильно вести себя дома. Слушай внимательно!']]},
 {name:'КУХНЯ',time:'21:26',task:'Найди вторую кассету. Не включай свет.',item:'КАССЕТА 02',x:17,desc:'Кассета пахнет пылью и чем-то сладким. На записи слышно, как кто-то спорит за стеной.',lines:[['ДЕВОЧКА','Мама говорила, что мне нельзя сюда заходить ночью.'],['КРОТ','Если тебе страшно, просто улыбнись. Хорошие девочки не задают лишних вопросов.']]},
-{name:'ПОДВАЛ',time:'21:41',task:'Найди последнюю кассету. Дверь за тобой закрылась.',item:'КАССЕТА 03',x:82,desc:'На кассете нет подписи. Только выцарапанные буквы: I A W O Y.',lines:[['ДЕВОЧКА','Почему здесь так холодно? Кто-то стоит за дверью.'],['КРОТ','Ты ведь помнишь моё обещание? Я всегда присмотрю за тобой.']]}
+{name:'ПОДВАЛ',time:'21:41',task:'Найди последнюю кассету. Дверь за тобой закрылась.',item:'КАССЕТА 03',x:82,desc:'На кассете нет подписи. Только выцарапанные буквы: I A W O Y.',lines:[['ДЕВОЧКА','Почему здесь так холодно? Кто-то стоит за дверью.'],['КРОТ','Ты ведь помнишь моё обещание? Я всегда присмотрю за тобой.']]},
+{name:'КОРИДОР БЕЗ ДВЕРЕЙ',time:'00:03',task:'После помех найди семейную фотографию.',item:'ФОТОГРАФИЯ',x:74,desc:'На снимке мать отвернулась к стене. Сестра зачёркнута. Рядом с девочкой стоит человек в костюме крота. Лицо вырезано ножницами.',lines:[['ДЕВОЧКА','Это не мог быть дядя. Он всегда был добрым…'],['ЗАПИСЬ','[далёкий мужской голос] Не показывай ей обратную сторону.']]},
+{name:'КОМНАТА МОНТАЖА',time:'00:17',task:'Найди источник голоса. Запись почти закончилась.',item:'АУДИОКАССЕТА',x:20,desc:'На плёнке слышен голос дяди: «Я записывал уроки, чтобы она не оставалась одна. Но кто-то заменил дорожку. Я не говорил ей делать это…»',lines:[['ДЕВОЧКА','Значит, это был не его голос? Тогда кто говорил со мной?'],['НЕИЗВЕСТНЫЙ','Ты уже знаешь достаточно. Выключи телевизор.']] }
 ];
-let room=0,pos=24,found=[],dialogues=[],di=0,afterDialog=null,locked=false,gameStarted=false;
-function setRoom(){let r=rooms[room];$('#roomLabel').textContent=r.name+' · '+r.time;$('#task').textContent=r.task;$('#items').innerHTML='';$('#sceneArt').className='';$('#mole').style.display=room===0?'block':'none';$('#girl').style.left=pos+'%';
-let itm=document.createElement('button');itm.className='pickup';itm.id='target';itm.style.left=r.x+'%';itm.setAttribute('aria-label','Подобрать кассету');itm.innerHTML='<svg viewBox="0 0 36 28"><rect x="2" y="3" width="32" height="22" rx="3" fill="#322438" stroke="#d7a4ba" stroke-width="2"/><circle cx="12" cy="14" r="5" fill="none" stroke="#d7a4ba" stroke-width="2"/><circle cx="25" cy="14" r="5" fill="none" stroke="#d7a4ba" stroke-width="2"/><path d="M12 22h13" stroke="#d7a4ba" stroke-width="2"/></svg>';$('#items').append(itm);itm.onclick=collect;
+let room=0,pos=24,found=[],dialogues=[],di=0,afterDialog=null,locked=false,gameStarted=false,horrorMode=false,moveTimer=null,moveDirection=0,audioCtx=null,ambientNodes=[],soundOn=false;
+function setRoom(){let r=rooms[room];$('#roomLabel').textContent=r.name+' · '+r.time;$('#task').textContent=r.task;$('#items').innerHTML='';$('#sceneArt').className='';$('#mole').style.display=(room===0||horrorMode)?'block':'none';$('#girl').style.left=pos+'%';
+let itm=document.createElement('button');itm.className='pickup';itm.id='target';itm.style.left=r.x+'%';itm.setAttribute('aria-label',r.item==='КАССЕТА 01'||r.item==='КАССЕТА 02'||r.item==='КАССЕТА 03'?'Подобрать кассету':'Осмотреть предмет');itm.innerHTML='<svg viewBox="0 0 36 28"><rect x="2" y="3" width="32" height="22" rx="3" fill="#322438" stroke="#d7a4ba" stroke-width="2"/><circle cx="12" cy="14" r="5" fill="none" stroke="#d7a4ba" stroke-width="2"/><circle cx="25" cy="14" r="5" fill="none" stroke="#d7a4ba" stroke-width="2"/><path d="M12 22h13" stroke="#d7a4ba" stroke-width="2"/></svg>';$('#items').append(itm);itm.onclick=collect; if(found.includes(room))itm.classList.add('gone'); saveGame();
 }
 function say(who,arr,done){locked=true;dialogues=arr;di=0;afterDialog=done||null;$('#speaker').textContent=who;$('#words').textContent=arr[0];$('#dialog').style.display='block'}
 function next(){if($('#dialog').style.display==='none')return;if(di<dialogues.length-1){di++;$('#words').textContent=dialogues[di]}else{$('#dialog').style.display='none';locked=false;let cb=afterDialog;afterDialog=null;if(cb)cb()}}
 $('#dialog').onclick=next;
 function toast(s){let t=$('#toast');t.textContent=s;t.style.display='block';clearTimeout(window.tt);window.tt=setTimeout(()=>t.style.display='none',2200)}
-function move(d){if(!gameStarted||locked)return;pos=Math.max(3,Math.min(91,pos+d));$('#girl').style.left=pos+'%'}
-function hold(el,d){let t;el.addEventListener('pointerdown',e=>{e.preventDefault();move(d);t=setInterval(()=>move(d),105)});['pointerup','pointerleave','pointercancel'].forEach(ev=>el.addEventListener(ev,()=>clearInterval(t)))}
+function stopMove(){if(moveTimer){clearInterval(moveTimer);moveTimer=null}moveDirection=0;$('#girl').classList.remove('walking')}
+function move(d){if(!gameStarted||locked)return;pos=Math.max(3,Math.min(91,pos+d));$('#girl').style.left=pos+'%';$('#girl').classList.add('walking')}
+function hold(el,d){
+ el.addEventListener('pointerdown',e=>{e.preventDefault();stopMove();moveDirection=d;try{el.setPointerCapture(e.pointerId)}catch(_){}move(d);moveTimer=setInterval(()=>move(d),115)});
+ el.addEventListener('lostpointercapture',stopMove);
+}
 hold($('#left'),-2.4);hold($('#right'),2.4);
-document.addEventListener('keydown',e=>{if(['ArrowLeft','a','A'].includes(e.key))move(-2);if(['ArrowRight','d','D'].includes(e.key))move(2);if([' ','Enter','e','E'].includes(e.key)){e.preventDefault();interact()}});
-function interact(){if(locked){next();return}if($('#inventory').style.display==='block')$('#inventory').style.display='none';let target=$('#target');if(target){let tx=parseFloat(target.style.left);if(Math.abs(tx-pos)<17){collect();return}}if(room<2&&pos>78){say('ДЕВОЧКА',['Дверь ведёт дальше по коридору. Из-за неё доносится тихий гул телевизора.'],()=>changeRoom(room+1));return}if(room>0&&pos<9){say('ДЕВОЧКА',['Назад… Мне нужно проверить, не забыла ли я что-нибудь.'],()=>changeRoom(room-1));return}say('ДЕВОЧКА',['Здесь больше нечего трогать. Только пыль и старые вещи.'])}
-function collect(){if(locked||found.includes(room))return;found.push(room);$('#target').classList.add('gone');$('#tapes').textContent='КАССЕТЫ '+found.length+' / 3';let slots=$$('.slot');slots[found.length-1].textContent='01'.replace('01',String(found.length).padStart(2,'0'));let r=rooms[room];$('#scene').classList.add('glitch');setTimeout(()=>$('#scene').classList.remove('glitch'),1100);
-say('ДЕВОЧКА',[r.desc,...r.lines.map(v=>v[0]+': '+v[1])],()=>{if(found.length===3)triggerHorror();else if(room<2){toast('Кассета добавлена. Найди следующую.');changeRoom(room+1)}else toast('Возвращайся в коридор.')})}
-function changeRoom(n){room=n;pos=n===1?18:24;setRoom();if(n===1)say('КРОТ',['Отлично! Ты хорошо справляешься. Теперь давай посмотрим, что хранится на кухне.']);if(n===2)say('КРОТ',['Последний урок, дружок. После него мы сможем поговорить.'])}
-function triggerHorror(){document.body.classList.add('horror');$('#scene').classList.add('glitch');$('#mole').style.display='block';$('#mole').style.right='8%';$('#task').textContent='СИГНАЛ НАРУШЕН · НЕ ОБОРАЧИВАЙСЯ';$('#roomLabel').textContent='НЕИЗВЕСТНАЯ ЗАПИСЬ · 00:00';$('#endingArt').style.opacity='.18';
-say('КРОТ',['…','Ты собрала все три кассеты. Молодец.','Но это не те воспоминания, которые тебе стоило возвращать.'],()=>say('ГОЛОС ИЗ КАССЕТЫ',['[шипение плёнки]','Я ведь обещал, что всегда буду присматривать за тобой.','Почему ты всё-таки открыла глаза?'],()=>showEnding()))}
-function showEnding(){$('#overlay').style.display='flex';$('#panel').innerHTML='<h2>ЗАПИСЬ ПОВРЕЖДЕНА</h2><p>Крот больше не двигается. Из динамика доносится голос, который девочка не слышала много лет.</p><p><i>«I’ll Always Watch Over You».</i></p><p>Это конец демоверсии. Но кассета продолжает вращаться…</p><button id="backTitle">В ГЛАВНОЕ МЕНЮ</button>';$('#backTitle').onclick=()=>location.reload()}
-function startGame(){gameStarted=true;$('#title').style.display='none';$('#game').style.display='block';room=0;pos=24;found=[];document.body.classList.remove('horror');$('#slots').innerHTML='<span class="slot">—</span><span class="slot">—</span><span class="slot">—</span>';$('#tapes').textContent='КАССЕТЫ 0 / 3';setRoom();say('КРОТ',['Привет, дружок! Добро пожаловать домой.','Сегодня мы посмотрим три маленьких обучающих урока. Найди кассеты в комнатах.','Пользуйся кнопками со стрелками, чтобы ходить. Подойди к кассете и нажми «ДЕЙСТВИЕ».'],()=>toast('Исследуй спальню. Найди кассету.'))}
-$('#start').onclick=startGame;$('#continue').onclick=startGame;$('#how').onclick=()=>modal('УПРАВЛЕНИЕ','<p>На телефоне: кнопки ◀ ▶ внизу экрана.</p><p>На компьютере: A / D или стрелки.</p><p>Подойди к предмету и нажми «ДЕЙСТВИЕ» или E. Кассеты открывают воспоминания. После третьей мир изменится.</p><button id="close">НАЗАД</button>');
-$('#menu').onclick=()=>{modal('ПАУЗА','<p>Прогресс демоверсии сохраняется до перезагрузки страницы.</p><button id="back">ПРОДОЛЖИТЬ</button><button id="home">В ГЛАВНОЕ МЕНЮ</button>');$('#back').onclick=()=>$('#overlay').style.display='none';$('#home').onclick=()=>location.reload()};
+window.addEventListener('pointerup',stopMove);window.addEventListener('pointercancel',stopMove);
+window.addEventListener('blur',stopMove);document.addEventListener('visibilitychange',()=>{if(document.hidden)stopMove()});
+
+document.addEventListener('keydown',e=>{if(['ArrowLeft','a','A'].includes(e.key)){e.preventDefault();move(-2)}if(['ArrowRight','d','D'].includes(e.key)){e.preventDefault();move(2)}if([' ','Enter','e','E'].includes(e.key)){e.preventDefault();interact()}});
+document.addEventListener('keyup',e=>{if(['ArrowLeft','ArrowRight','a','A','d','D'].includes(e.key))$('#girl').classList.remove('walking')});
+function interact(){if(locked){next();return}if($('#inventory').style.display==='block')$('#inventory').style.display='none';let target=$('#target');if(target){let tx=parseFloat(target.style.left);if(Math.abs(tx-pos)<17){collect();return}}if(room<4&&pos>78){say('ДЕВОЧКА',['Проход ведёт дальше. В темноте что-то щёлкает, будто включилась старая камера.'],()=>changeRoom(room+1));return}if(room>0&&pos<9){say('ДЕВОЧКА',['Назад… Мне нужно проверить, не забыла ли я что-нибудь.'],()=>changeRoom(room-1));return}say('ДЕВОЧКА',['Здесь больше нечего трогать. Только пыль и старые вещи.'])}
+function collect(){
+ if(locked||found.includes(room))return;
+ found.push(room);$('#target').classList.add('gone');
+ if(!horrorMode){$('#tapes').textContent='КАССЕТЫ '+Math.min(found.length,3)+' / 3';let slots=$$('.slot');if(slots[found.length-1])slots[found.length-1].textContent=String(found.length).padStart(2,'0')}
+ let r=rooms[room];$('#scene').classList.add('glitch');setTimeout(()=>$('#scene').classList.remove('glitch'),1100);saveGame();
+ say(horrorMode?'ДЕВОЧКА':'ДЕВОЧКА',[r.desc,...r.lines.map(v=>v[0]+': '+v[1])],()=>{
+   if(!horrorMode&&found.filter(x=>x<3).length===3)triggerHorror();
+   else if(horrorMode&&room===3){toast('Фотография добавлена. Найди источник голоса.');changeRoom(4)}
+   else if(horrorMode&&room===4){saveGame();showEnding()}
+   else if(room<2){toast('Кассета добавлена. Найди следующую.');changeRoom(room+1)}
+   else toast('Ищи проход справа.');
+ });
+}
+function changeRoom(n){room=n;pos=n===1?18:24;setRoom();if(n===1)say('КРОТ',['Отлично! Ты хорошо справляешься. Теперь давай посмотрим, что хранится на кухне.']);if(n===2)say('КРОТ',['Последний урок, дружок. После него мы сможем поговорить.']);if(n===3)say('ДЕВОЧКА',['Это место не похоже на настоящий дом. Стены… они будто нарисованы поверх старой плёнки.']);if(n===4)say('ДЕВОЧКА',['Я слышу голос из соседней комнаты. Он звучит так, будто кто-то записал его много лет назад.']);saveGame()}
+function triggerHorror(){
+ horrorMode=true;document.body.classList.add('horror');$('#scene').classList.add('glitch');$('#mole').style.display='block';$('#mole').style.right='8%';$('#task').textContent='СИГНАЛ НАРУШЕН · НАЙДИ ВЫХОД';$('#roomLabel').textContent='НЕИЗВЕСТНАЯ ЗАПИСЬ · 00:00';$('#endingArt').style.opacity='.18';playSting();saveGame();
+ say('КРОТ',['…','Ты собрала все три кассеты. Молодец.','Но это не те воспоминания, которые тебе стоило возвращать.'],()=>say('ГОЛОС ИЗ КАССЕТЫ',['[шипение плёнки]','Я ведь обещал, что всегда буду присматривать за тобой.','Почему ты всё-таки открыла глаза?'],()=>{changeRoom(3);toast('Найди фотографию. Теперь игра изменилась.')}))
+}
+function showEnding(){$('#overlay').style.display='flex';$('#panel').innerHTML='<h2>ЗАПИСЬ ПОВРЕЖДЕНА</h2><p>Крот больше не двигается. Из динамика доносится голос, который девочка не слышала много лет.</p><p><i>«I’ll Always Watch Over You».</i></p><p>Это конец первой главы. За дверью слышно, как кто-то перематывает плёнку. Прогресс сохранён.</p><button id="backTitle">В ГЛАВНОЕ МЕНЮ</button>';$('#backTitle').onclick=()=>location.reload()}
+function startGame(){gameStarted=true;stopMove();$('#title').style.display='none';$('#game').style.display='block';room=0;pos=24;found=[];horrorMode=false;document.body.classList.remove('horror');$('#slots').innerHTML='<span class="slot">—</span><span class="slot">—</span><span class="slot">—</span>';$('#tapes').textContent='КАССЕТЫ 0 / 3';setRoom();say('КРОТ',['Привет, дружок! Добро пожаловать домой.','Сегодня мы посмотрим три маленьких обучающих урока. Найди кассеты в комнатах.','Пользуйся кнопками со стрелками, чтобы ходить. Подойди к кассете и нажми «ДЕЙСТВИЕ».'],()=>{toast('Исследуй спальню. Найди кассету.');saveGame();if(soundOn)startAmbient()})}
+
+const SAVE_KEY='iawoy_save_v08';
+function saveGame(){if(!gameStarted)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify({room,pos,found,horrorMode,gameStarted:true}))}catch(e){}}
+function loadGame(){try{let d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(!d||!d.gameStarted)return false;gameStarted=true;room=Math.max(0,Math.min(4,d.room||0));pos=d.pos||24;found=Array.isArray(d.found)?d.found:[];horrorMode=!!d.horrorMode;$('#title').style.display='none';$('#game').style.display='block';document.body.classList.toggle('horror',horrorMode);$('#slots').innerHTML='<span class="slot">—</span><span class="slot">—</span><span class="slot">—</span>';found.filter(x=>x<3).forEach((x,i)=>{$$('.slot')[i].textContent=String(i+1).padStart(2,'0')});$('#tapes').textContent='КАССЕТЫ '+Math.min(found.filter(x=>x<3).length,3)+' / 3';setRoom();if(horrorMode){$('#mole').style.display='block';$('#task').textContent=rooms[room].task}toast('Сохранение загружено.');return true}catch(e){return false}}
+function startAmbient(){try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();audioCtx.resume();ambientNodes.forEach(n=>{try{n.stop()}catch(e){}});ambientNodes=[];let osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();osc.type='sawtooth';osc.frequency.value=48;filter.type='lowpass';filter.frequency.value=115;gain.gain.value=.018;osc.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);osc.start();ambientNodes.push(osc);soundOn=true;$('#soundToggle').textContent='ЗВУК: ВКЛ'}catch(e){}}
+function stopAmbient(){ambientNodes.forEach(n=>{try{n.stop()}catch(e){}});ambientNodes=[];soundOn=false;$('#soundToggle').textContent='ЗВУК: ВЫКЛ'}
+function playSting(){if(!soundOn||!audioCtx)return;try{let o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='triangle';o.frequency.setValueAtTime(180,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(38,audioCtx.currentTime+1.2);g.gain.setValueAtTime(.08,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+1.2);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+1.25)}catch(e){}}
+$('#soundToggle').onclick=()=>soundOn?stopAmbient():startAmbient();
+$('#continue').onclick=()=>{if(!loadGame())startGame()};
+
+$('#start').onclick=()=>{localStorage.removeItem(SAVE_KEY);startGame()};$('#how').onclick=()=>modal('УПРАВЛЕНИЕ','<p>На телефоне: кнопки ◀ ▶ внизу экрана.</p><p>На компьютере: A / D или стрелки.</p><p>Подойди к предмету и нажми «ДЕЙСТВИЕ» или E. Кассеты открывают воспоминания. После третьей мир изменится.</p><button id="close">НАЗАД</button>');
+$('#menu').onclick=()=>{modal('ПАУЗА','<p>Прогресс автоматически сохраняется после важных событий.</p><button id="back">ПРОДОЛЖИТЬ</button><button id="home">В ГЛАВНОЕ МЕНЮ</button>');$('#back').onclick=()=>$('#overlay').style.display='none';$('#home').onclick=()=>location.reload()};
 $('#bag').onclick=()=>$('#inventory').style.display=$('#inventory').style.display==='block'?'none':'block';$('#use').onclick=interact;$('#interact').onclick=interact;
+window.addEventListener('beforeunload',saveGame);
 function modal(title,body){$('#overlay').style.display='flex';$('#panel').innerHTML='<h2>'+title+'</h2>'+body;let c=$('#close');if(c)c.onclick=()=>$('#overlay').style.display='none'}
 </script></body></html>
